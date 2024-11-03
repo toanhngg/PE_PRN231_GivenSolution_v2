@@ -1,0 +1,158 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Employee Management</title>
+    <style>
+        form {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-top: 10px;
+        }
+
+        #errorMessage {
+            color: red;
+        }
+
+        th, td {
+            border: 1px solid black;
+            /* padding: 8px; */
+            text-align: left;
+        }
+    </style>
+</head>
+<body>
+    <h1>Employee Management</h1>
+
+    <form id="employeeForm">
+        <label for="name">EmployeeId:</label>
+        <input type="text" id="employeeId" name="employeeId" required>
+        <label for="name">Name:</label>
+        <input type="text" id="name" name="name" required>
+
+        <label for="gender">Gender:</label>
+        @* <input type="text" id="gender" name="gender" required> *@
+        <select id="gender" name="gender">
+        <option value="Male" ${employee.gender == 'Male' ? 'selected' : ''}>Male</option>
+       <option value="Female" ${employee.gender == 'Female' ? 'selected' : ''}>Female</option>
+       <option value="Other" ${employee.gender == 'Other' ? 'selected' : ''}>Other</option>
+       </select>
+
+        <label for="dob">Date of Birth:</label>
+        <input type="date" id="dob" name="dob" required>
+
+        <label for="position">Position:</label>
+        <input type="text" id="position" name="position" required>
+
+        <label for="isFulltime">Full Time:</label>
+        <input type="checkbox" id="isFulltime" name="isFulltime"><br />
+
+        <button type="submit">Add Employee</button>
+        <p id="errorMessage"></p>
+    </form>
+
+    <h2>Employee List</h2>
+    
+    @* <ul id="employeeList"></ul> *@
+    <table id="employeeList">
+        <thead>
+            <tr>
+                <th>EmployeeId</th>
+                <th>EmployeeName</th>
+                <th>Gender</th>
+                <th>Dob</th>
+                <th>Position</th>
+                <th>IsFulltime</th>
+            </tr>
+        </thead>
+        <tbody id="employeeListBody">
+            <!-- Table rows will be added dynamically -->
+        </tbody>
+    </table>
+    <script>
+        document.getElementById('employeeForm').addEventListener('submit', function (event) {
+            event.preventDefault();
+            const employeeId = document.getElementById('employeeId').value;
+            console.log(employeeId)
+            const name = document.getElementById('name').value;
+            const gender = document.getElementById('gender').value;
+            const dob = document.getElementById('dob').value;
+            const position = document.getElementById('position').value;
+            const isFulltime = document.getElementById('isFulltime').checked;
+
+            const employee = {
+                employeeId: employeeId,
+                name: name,
+                gender: gender,
+                dob: new Date(dob).toISOString(),
+                position: position,
+                isFulltime: isFulltime
+            };
+            console.log(employee);
+
+            fetch('http://localhost:5100/api/Employee', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(employee)
+            })
+                // .then(response => {
+                //     if (response.status === 409) {
+                //         throw new Error('Employee already exists.');
+                //     }
+                //     if (!response.ok) {
+                //         throw new Error('Network response was not ok');
+                //     }
+                //     return response.json();
+                // })
+                .then(data => {
+                    console.log('Success:', data);
+                    document.getElementById('errorMessage').textContent = '';
+                    fetchEmployees();
+                })
+                .catch(error => {
+                    document.getElementById('errorMessage').textContent = error.message;
+                    console.error('Error:', error);
+                });
+        });
+
+        function fetchEmployees() {
+            fetch('http://localhost:5100/api/Employee')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    const employeeTableBody = document.getElementById('employeeListBody');
+                    employeeTableBody.innerHTML = '';
+
+                    data.forEach(employee => {
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                                                                <td>${employee.employeeId}</td>
+                                                                <td>${employee.name}</td>
+                                                                <td>${employee.gender}</td>
+                                                                <td>${new Date(employee.dob).toLocaleDateString()}</td>
+                                                                <td>${employee.position}</td>
+                                                                <td>${employee.isFulltime ? 'True' : 'False'}</td>
+                                            `;
+                        employeeTableBody.appendChild(row);
+                    });
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                });
+        }
+
+        // Fetch the employee list when the page loads
+        window.onload = fetchEmployees;
+    </script>
+</body>
+</html>
